@@ -138,25 +138,25 @@ Create resourecs in the diagram:
 
 ![alt text](imgs/k8s_guestbook_app_architecture.png "K8s Guestbook App Architecture")
 ```
-(note: you could save time by executing "kubectl apply -f k8s/examples/guestbook/*" instead of individual yaml files below)
+(note: you could save time by executing "kubectl apply -f guestbook/*" instead of individual yaml files below)
 
 # Create the Redis master deployment
-kubectl apply -f k8s/examples/guestbook/redis-master-deployment.yaml
+kubectl apply -f guestbook/redis-master-deployment.yaml
 
 # Create the Redis master service
-kubectl apply -f k8s/examples/guestbook/redis-master-service.yaml
+kubectl apply -f guestbook/redis-master-service.yaml
 
 # Create the Redis slave deployment
-kubectl apply -f k8s/examples/guestbook/redis-slave-deployment.yaml
+kubectl apply -f guestbook/redis-slave-deployment.yaml
 
 # Create the Redis slave service
-kubectl apply -f k8s/examples/guestbook/redis-slave-service.yaml
+kubectl apply -f guestbook/redis-slave-service.yaml
 
 # Create the guestbook deployment
-kubectl apply -f k8s/examples/guestbook/frontend-deployment.yaml
+kubectl apply -f guestbook/frontend-deployment.yaml
 
 # Create the guestbook service
-kubectl apply -f k8s/examples/guestbook/frontend-service.yaml
+kubectl apply -f guestbook/frontend-service.yaml
 ```
 
 Now check resources created
