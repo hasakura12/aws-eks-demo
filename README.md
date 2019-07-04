@@ -368,15 +368,11 @@ users:
   - ![alt text](imgs/k8s_authentication_worker.png "K8s Authentication Worker Nodes")
 
 
-## K8s integration with AWS native service
+## K8s integration with AWS native services
 - VPC
 - ELB
 - EC2
 - ASG
-
-## What is K8s Control Plane
-Highly available managed k8s components, entailing HA Master nodes, HA etcd, and NLB.
-![alt text](imgs/k8s_control_plane.png "Control Plane")
 
 ## K8s Dashboard
 K8s dashboard GUI
@@ -387,6 +383,7 @@ K8s dashboard architecture
 
 ![alt text](imgs/k8s_dashboard_architecture.png "K8s Dashboard Architecture")
 
+[Deploy K8s Dashboad](https://docs.aws.amazon.com/eks/latest/userguide/dashboard-tutorial.html)
 
 ## AWS CLI vs EKSCTL
 ### AWS CLI
@@ -445,9 +442,6 @@ kubectl get all
 # 7. delete the cluster
 eksctl delete cluster --name EKS-by-eksctl --region eu-central-1
 ```
-
-### Nest Steps
-- [Deploy K8s Dashboad](https://docs.aws.amazon.com/eks/latest/userguide/dashboard-tutorial.html)
 
 
 ### Further Readings
