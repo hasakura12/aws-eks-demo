@@ -52,7 +52,6 @@ K8s components:
 - Worker node: 
   - Kubelet: agent running on cluster nodes
   - Container runtime: such as Docker runtime
-
 - Kubectl: CLI to manage/deploy apps on cluster
 
 
@@ -234,6 +233,21 @@ Now check the EC2 instance with the private IP `ip-192-168-37-79` and you will s
 
 ![alt text](imgs/k8s_guestbook_private_ips.png "K8s Guestbook Private IPs")
 
+### Rollout New Version
+By default, K8s rolls out a new version of apps using rolling update.
+```
+# modify deployment yaml file, then rollout
+kubectl rollout deployment frontend
+
+# check status of rollout
+kubectl rollout status deployment/frontend
+
+# check history of rollout
+kubectl rollout history deployment/frontend
+
+# undo rollout
+kubectl rollout undo deployment/frontend
+```
 
 ### How to Test (chaos monkey)
 ```
