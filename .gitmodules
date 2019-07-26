@@ -1,0 +1,6 @@
+[submodule "terraform/terraform-aws-eks-infra"]
+	path = terraform/terraform-aws-eks-infra
+	url = git@bitbucket.org:cloudreach/terraform-aws-eks-infra.git
+[submodule "terraform-aws-eks-infra"]
+	path = terraform-aws-eks-infra
+	url = git@bitbucket.org:cloudreach/terraform-aws-eks-infra.git
