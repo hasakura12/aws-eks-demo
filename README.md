@@ -127,6 +127,10 @@ terraform output eks_kubeconfig > ~/.kube/config
 6. get cluster info to validate kubectl works `kubectl cluster-info`
 7. `export AWS_PROFILE=cr-labs-hisashi`
 8. `kubectl get pods`
+9. Join worker nodes to the cluster (this is important! Without this, pods can't be created at later steps)
+```
+kubectl apply -f config-map-aws-auth_eks-cluster-terraform.yaml
+```
 
 
 ### 3.2 eksctl
