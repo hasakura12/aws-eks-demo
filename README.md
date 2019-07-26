@@ -1,26 +1,36 @@
 # Launch Guestbook App on Amazon EKS in 15 Minutes or Less
 
+## Clone
+This repo contains a Git submodule. Make sure to clone it with `--recurse-submodules` option.
+```
+git clone --recurse-submodules git@bitbucket.org:cloudreach/eks-guestbook.git
+```
+
+## EKS and App Architecture Diagram
 ![alt text](imgs/k8s_eks_overall_architecture.png "K8s EKS Architecture")
 
-- Prerequisites
-- Architecture Overview
-  - K8s Architecture
-  - EKS Architecture
-- Set up AWS K8s cluster and Worker nodes in EKS
-- Deploy Apps in the cluster
-- Scale up and down
-- How to Test
-- Clean up
+## Index
+1. Prerequisites
+2. Architecture Overview
+3. Set up AWS K8s cluster and worker nodes in EKS
+4. Deploy Apps in the cluster
+5. Scale up and down
+6. Rollout New Version
+7. How to Test
+8. Clean up
 
-###  Prerequisites:
+##  1. Prerequisites:
 - AWS CLI
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/): K8s CLI to manage clusters (deploy pods, services, deployments, and more)
 - [aws-iam-authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html): tool to let kubectl authenticate to EKS via AWS IAM (because K8s clusters resides within AWS)
-- [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html) (at least 0.1.37): CLI to create and manage clusters in AWS EKS
+- if deploying cluster using `eksctl`
+  - [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html) (at least 0.1.37): CLI to create and manage clusters in AWS EKS
+- if deploying cluster using `terraform`
+  - terraform v0.12+
 ```
 aws --version
-export AWS_PROFILE=cr-labs-hisashi
-aws sts assume-role --role-arn arn:aws:iam::734811867068:role/Admin --role-session-name test
+aws-google-auth -p cr-labs-master
+export AWS_PROFILE=cr-labs-<LAB-NAME-HERE>
 
 # install kubectl on MacOS
 brew install kubernetes-cli
@@ -33,18 +43,21 @@ brew install aws-iam-authenticator
 brew tap weaveworks/tap
 brew install weaveworks/tap/eksctl
 eksctl version
+
+# terraform version needs to be v0.12+
+terraform --version
 ```
 
-### Architecture Overview
+## 2. Architecture Overview
 
-#### K8s Architecture
-Kubernetes (K8s) is a container orchestration tool (i.e. manages and propagates changes across nodes. Can be thought of like a combination of Load Balancer and AWS Auto Scaling Group in terms of scalability and HA). 
+### 2.1 K8s Architecture
+Kubernetes (K8s) is a container orchestration tool. It manages and propagates changes across nodes. _Some_ of its functions are 1) load balancing and 2) maintaining high availability via the concept called _replica_ (i.e. AWS equivalent of _autoscaling group_). 
 
 It has a master-worker node structure:
 ![alt text](imgs/k8s_architecture.png "K8s Architecture")
 
 K8s components:
-- Master node (i.e. Control Plane):
+- Master node (i.e. AWS EKS calls this wrapper resource as _Control Plane_):
   - API server: interacts with `kubectl` CLI
   - Etcd: key-value store, implements locks
   - Controller: health check, makes sure pods are running
@@ -57,7 +70,9 @@ K8s components:
 
 ![alt text](imgs/k8s_general_architecture.png "K8s General Architecture")
 
-#### App Architecture
+### 2.2 App Architecture
+The app is highly available website backed by master-slave DBs.
+
 ![alt text](imgs/k8s_guestbook_app_architecture.png "K8s Guestbook App Architecture")
 - Frontend PHP app
   - load balanced to public ELB
@@ -68,16 +83,54 @@ K8s components:
   - multi slaves (read)
   - slaves sync continuously from master
 
-#### EKS Architecture
+### 2.3 EKS Architecture
 The Amazon EKS control plane consists of control plane instances that run the Kubernetes software, such as etcd and the API server. The control plane runs in an account managed by AWS, and the Kubernetes API is exposed via the Amazon EKS API server endpoint. Each Amazon EKS cluster control plane is single-tenant and unique and runs on its own set of Amazon EC2 instances
 
 Below diagram is EKS Control Plane resources that EKS is responsible for:
 ![alt text](imgs/k8s_control_plane_2.png "K8s Control Plane")
 
 
-### Set up AWS K8s cluster and Worker nodes in EKS (infrastructure)
+## 3. Set up AWS K8s cluster and worker nodes in EKS (infra)
 
-Before deploying k8s pods and services and whatnot, we first need to create K8s clusters (master-worker nodes). `eksctl` tool will create K8s Control Plane (master nodes, etcd, API server, etc), worker nodes, VPC, Security Groups, Subnets, Routes, Internet Gateway, etc.
+Before deploying k8s pods and services and whatnot, we first need to create K8s clusters (master-worker nodes). 
+
+You could set up a cluster in either `terraform` or `eksctl`.
+
+### 3.1 Terraform
+Terraform infra repo is fetched as a git submodule under `terraform-aws-eks-infra` folder. Cd into that directory first.
+```
+cd terraform-aws-eks-infra
+```
+
+#### Assumptions
+- Terraform provider will assume a role to deploy resources (simulating an AWS identity in IAM account assuming a role into a shared/dev/prod account)
+- We are using AWS profile `cr-labs-master` as an IAM account's identity
+- we are using AWS profile `cr-labs-hisashi` to assume an IAM role. My `~/.aws/config` is below:
+```
+[profile cr-labs-hisashi]
+source_profile = cr-labs-master
+role_arn = arn:aws:iam::734811867068:role/Admin
+region = eu-central-1
+output = text
+```
+
+#### Step-by-Step
+1. `export AWS_PROFILE=cr-labs-master`
+2. `cd composition/eu-central-1/eks_cluster/dev`
+3. `terraform init -backend-config=backend.config`
+4. `terraform apply`
+5. Write the kubeconfig file to `~/.kube/config` to allow kubectl client to connect to K8s cluster. 
+```
+mkdir ~/.kube
+terraform output eks_kubeconfig > ~/.kube/config
+```
+6. get cluster info to validate kubectl works `kubectl cluster-info`
+7. `export AWS_PROFILE=cr-labs-hisashi`
+8. `kubectl get pods`
+
+
+### 3.2 eksctl
+`eksctl` tool will create K8s Control Plane (master nodes, etcd, API server, etc), worker nodes, VPC, Security Groups, Subnets, Routes, Internet Gateway, etc.
 
 ```
 # create EKS cluster (control plane and worker nodes). Takes about 10 minutes
@@ -132,7 +185,7 @@ NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.100.0.1   <none>        443/TCP   11m
 ```
 
-### Deploy Apps in the cluster (apps)
+## 4. Deploy Apps in the cluster (apps)
 Create resourecs in the diagram:
 
 ![alt text](imgs/k8s_guestbook_app_architecture.png "K8s Guestbook App Architecture")
@@ -202,7 +255,7 @@ frontend   LoadBalancer   10.100.87.13   ae31361089e5a11e99c950aaba47976b-192415
 Access the DNS name from a browser to see the guestbook app is working.
 ![alt text](imgs/k8s_guestbook_working.png "K8s Guestbook working")
 
-### Scale Up and Down
+## 5. Scale Up and Down
 You can scale up frontend deployment from current number of 3 to 4
 ```
 kubectl scale deployment frontend --replicas 4
@@ -233,7 +286,7 @@ Now check the EC2 instance with the private IP `ip-192-168-37-79` and you will s
 
 ![alt text](imgs/k8s_guestbook_private_ips.png "K8s Guestbook Private IPs")
 
-### Rollout New Version
+## 6. Rollout New Version
 By default, K8s rolls out a new version of apps using rolling update.
 ```
 # modify deployment yaml file, then rollout
@@ -249,7 +302,7 @@ kubectl rollout history deployment/frontend
 kubectl rollout undo deployment/frontend
 ```
 
-### How to Test (chaos monkey)
+## 7. How to Test (chaos monkey)
 ```
 # open first terminal, display all resources (pod, service, deploymnet)
 watch 'kc get deploy -o wide'
@@ -275,7 +328,7 @@ eksctl create cluster \
       --node-ami auto
 ```
 
-### Clean up
+## 8. Clean up
 ```
 # delete K8s apps
 kubectl delete deploy --all
