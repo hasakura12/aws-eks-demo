@@ -3,7 +3,7 @@
 ## Clone
 This repo contains a Git submodule. Make sure to clone it with `--recurse-submodules` option.
 ```
-git clone --recurse-submodules git@bitbucket.org:cloudreach/eks-guestbook.git
+git clone --recurse-submodules https://github.com/hasakura12/aws-eks-demo
 ```
 
 ## EKS and App Architecture Diagram
