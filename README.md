@@ -109,29 +109,46 @@ cd terraform-aws-eks-infra
 ```
 [profile cr-labs-hisashi]
 source_profile = cr-labs-master
-role_arn = arn:aws:iam::734811867068:role/Admin
+role_arn = arn:aws:iam::xxxxxxxxxxx:role/Admin
 region = eu-central-1
 output = text
 ```
 
-#### Step-by-Step
-1. `export AWS_PROFILE=cr-labs-master`
-2. `cd composition/eu-central-1/eks_cluster/dev`
-3. `terraform init -backend-config=backend.config`
-4. `terraform apply`
-5. Write the kubeconfig file to `~/.kube/config` to allow kubectl client to connect to K8s cluster. 
+#### Prerequisite - Terraform Backend to store remote states
 ```
-mkdir ~/.kube
-terraform output eks_kubeconfig > ~/.kube/config
-```
-6. get cluster info to validate kubectl works `kubectl cluster-info`
-7. `export AWS_PROFILE=cr-labs-hisashi`
-8. `kubectl get pods`
-9. Join worker nodes to the cluster (this is important! Without this, pods can't be created at later steps)
-```
-kubectl apply -f config-map-aws-auth_eks-cluster-terraform.yaml
+$ export AWS_PROFILE=cr-labs-hisashi
+$ aws s3 mb s3://s3-ec1-eks-terraform-demo-dev-backend-terraform-states
+$ aws s3 ls
+$ cd composition/terraform_backend
+$ export AWS_PROFILE=cr-labs-master
+
+# Edit terraform.tfvars
+account_id = "YOUR_AWS_ACCOUNT_ID"
+
+$ terraform init -backend-config=backend.config
+$ terraform plan
+$ terraform apply --auto-approve
 ```
 
+#### Step-by-Step
+```
+$ export AWS_PROFILE=cr-labs-master
+$ cd composition/eu-central-1/eks_cluster/dev
+$ terraform init -backend-config=backend.config
+$ terraform apply --auto-approve
+
+# Write the kubeconfig file to `~/.kube/config` to allow kubectl client to connect to K8s cluster. 
+$ mkdir ~/.kube
+$ terraform output eks_kubeconfig > ~/.kube/config
+
+$ export AWS_PROFILE=cr-labs-hisashi
+
+# get cluster info to validate kubectl works
+$ kubectl cluster-info
+$ kubectl get pods
+
+$ kubectl apply -f config-map-aws-auth_eks-cluster-terraform-demo.yaml
+```
 
 ### 3.2 eksctl
 `eksctl` tool will create K8s Control Plane (master nodes, etcd, API server, etc), worker nodes, VPC, Security Groups, Subnets, Routes, Internet Gateway, etc.
